@@ -18,7 +18,7 @@ struct socket_stream : public socket_node {
     ~socket_stream();
     bool get_remote_ip(std::string& ip) override;
     bool accept_socket(socket_t fd, const char ip[]);
-    void connect(const char node_name[], const char service_name[], int timeout);
+    virtual void connect(const char node_name[], const char service_name[]) override;
     bool do_connect();
     void try_connect();
     void set_package_callback(const std::function<void(char*, size_t)>& cb) override { m_package_cb = cb; }

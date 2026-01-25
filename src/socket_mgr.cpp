@@ -326,7 +326,7 @@ uint32_t socket_mgr::connect(std::string& err, const char node_name[], const cha
         m_timeout_list.insert({token, get_time_ms() + timeout});
     }    
 
-    stm->connect(node_name, service_name, timeout);
+    stm->connect(node_name, service_name);
     m_nodes[token] = stm;
     return token;
 }

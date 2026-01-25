@@ -85,7 +85,7 @@ bool socket_stream::accept_socket(socket_t fd, const char ip[]) {
     return true;
 }
 
-void socket_stream::connect(const char node_name[], const char service_name[], int timeout) {
+void socket_stream::connect(const char node_name[], const char service_name[]) {
     m_node_name = node_name;
     m_service_name = service_name;
 }

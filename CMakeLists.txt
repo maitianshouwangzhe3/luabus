@@ -7,10 +7,21 @@ add_compile_options(-fno-omit-frame-pointer)
 
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/src SOURCE_SRC)
 
-add_subdirectory(3rd/lua)
-add_subdirectory(3rd/luna)
+include(FetchContent)
+
+FetchContent_Declare(
+  lua
+  GIT_REPOSITORY  https://github.com/maitianshouwangzhe3/lua.git
+)
+
+FetchContent_Declare(
+  luna
+  GIT_REPOSITORY  https://github.com/maitianshouwangzhe3/luna.git
+)
+
+FetchContent_MakeAvailable(lua luna)
 
 add_library(luabus SHARED ${SOURCE_SRC})
 set_target_properties(luna_static PROPERTIES OUTPUT_NAME luabus PREFIX "")
-target_include_directories(luabus PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/3rd/luna ${CMAKE_CURRENT_SOURCE_DIR}/3rd/lua)
-target_link_libraries(luabus PRIVATE lua_static luna_static)    
+target_include_directories(luabus PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${lua_SOURCE_DIR} ${luna_SOURCE_DIR})
+target_link_libraries(luabus PRIVATE lua_static luna_static)

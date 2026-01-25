@@ -92,6 +92,6 @@ private:
     int m_max_count = 0;
     int m_count = 0;
     uint32_t m_next_token = 0;
-    int64_t m_next_update = 0;
+    // int64_t m_next_update = 0;
     std::unordered_map<uint32_t, socket_node*> m_nodes;
 };
