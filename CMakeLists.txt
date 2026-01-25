@@ -14,14 +14,9 @@ FetchContent_Declare(
   GIT_REPOSITORY  https://github.com/maitianshouwangzhe3/lua.git
 )
 
-FetchContent_Declare(
-  luna
-  GIT_REPOSITORY  https://github.com/maitianshouwangzhe3/luna.git
-)
-
-FetchContent_MakeAvailable(lua luna)
+FetchContent_MakeAvailable(lua)
 
 add_library(luabus SHARED ${SOURCE_SRC})
 set_target_properties(luabus PROPERTIES OUTPUT_NAME lbus PREFIX "")
-target_include_directories(luabus PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${lua_SOURCE_DIR} ${luna_SOURCE_DIR})
-target_link_libraries(luabus PRIVATE lua_static luna_static)
+target_include_directories(luabus PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${lua_SOURCE_DIR})
+target_link_libraries(luabus PRIVATE lua_static)
