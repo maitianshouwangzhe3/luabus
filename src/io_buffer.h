@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "tools.h"
 #include <assert.h>
 #include <limits.h>
 #include <string.h>

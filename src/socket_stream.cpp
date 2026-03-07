@@ -251,6 +251,84 @@ void socket_stream::send(const void* data, size_t data_len) {
     }
 }
 
+void socket_stream::sendv(const sendv_item items[], int count) {
+    if (m_closed)
+        return;
+
+    size_t data_len = 0;
+    for (int i = 0; i < count; i++)
+    {
+        data_len += items[i].len;
+    }
+
+    BYTE  header[MAX_VARINT_SIZE];
+    size_t header_len = encode_u64(header, sizeof(header), data_len);
+    stream_send((char*)header, header_len);
+
+    for (int i = 0; i < count; i++)
+    {
+        auto item = items[i];
+        stream_send((char*)item.data, item.len);
+    }
+}
+
+void socket_stream::async_send(const void* data, size_t data_len) {
+    if (m_closed)
+        return;
+
+    unsigned char  buffer[2048];    
+    size_t header_len = encode_u64(buffer, sizeof(buffer), data_len);
+    size_t total_len = header_len + data_len;
+    if (total_len <= sizeof(buffer)) {
+        memcpy(buffer + header_len, data, data_len);
+        if (!m_send_buffer.push_data(buffer, total_len)) {
+            on_error("send-buffer-full");
+            return;
+        }
+    } else {
+        if (!m_send_buffer.push_data(buffer, header_len)) {
+            on_error("send-buffer-full");
+            return;
+        }
+
+        if (!m_send_buffer.push_data(data, data_len)) {
+            on_error("send-buffer-full");
+            return;
+        }
+    }
+
+    (void)m_mgr->watch_send(m_socket, this, true);
+}
+
+void socket_stream::async_sendv(const sendv_item items[], int count) {
+    if (m_closed)
+        return;
+
+    size_t data_len = 0;
+    for (int i = 0; i < count; i++)
+    {
+        data_len += items[i].len;
+    }
+
+    BYTE  header[MAX_VARINT_SIZE];
+    size_t header_len = encode_u64(header, sizeof(header), data_len);
+    if (!m_send_buffer.push_data(header, header_len)) {
+        on_error("send-buffer-full");
+        return;
+    }
+
+    for (int i = 0; i < count; i++)
+    {
+        auto item = items[i];
+        if (!m_send_buffer.push_data(item.data, item.len)) {
+            on_error("send-buffer-full");
+            return;
+        }
+    }
+
+    (void)m_mgr->watch_send(m_socket, this, true);
+}
+
 void socket_stream::stream_send(const char* data, size_t data_len) {
     if (m_closed)
         return;
@@ -384,7 +462,6 @@ void socket_stream::on_can_send(size_t max_len, bool is_eof) {
 }
 #endif
 
-
 void socket_stream::do_send(size_t max_len, bool is_eof) {
     size_t total_send = 0;
     while (total_send < max_len && !m_closed) {
@@ -436,6 +513,7 @@ void socket_stream::do_send(size_t max_len, bool is_eof) {
     }
 
     m_send_buffer.compact(true);
+    (void)m_mgr->watch_send(m_socket, this, !m_send_buffer.empty());
 
     if (is_eof || max_len == 0) {
         on_error("connection-lost");
@@ -499,8 +577,9 @@ void socket_stream::dispatch_package() {
     while (!m_closed) {
         size_t data_len = 0;
         uint64_t package_size = 0;
+        size_t header_len = 0;
         auto* data = m_recv_buffer.peek_data(&data_len);
-        size_t header_len = decode_u64(&package_size, data, data_len);
+        header_len = decode_u64(&package_size, data, data_len);
         if (header_len == 0)
             break;
 
@@ -508,7 +587,7 @@ void socket_stream::dispatch_package() {
             break;
 
         m_package_cb((char*)data + header_len, (size_t)package_size);
-
+        
         m_recv_buffer.pop_data(header_len + (size_t)package_size);
     }
 

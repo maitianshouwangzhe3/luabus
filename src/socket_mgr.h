@@ -14,6 +14,12 @@
 #include "socket_helper.h"
 #include "socket_node.h"
 
+struct sendv_item
+{
+    const void* data;
+    size_t len;
+};
+
 class socket_mgr {
 public:
     socket_mgr();
@@ -32,8 +38,15 @@ public:
 
     void set_send_buffer_size(uint32_t token, size_t size);
     void set_recv_buffer_size(uint32_t token, size_t size);
+    void set_send_cache(uint32_t token, size_t size);
+    void set_recv_cache(uint32_t token, size_t size);
+    void set_timeout(uint32_t token, int duration); 
     void set_nodelay(uint32_t token, int flag);
+    void set_protobuf(bool flag) { m_is_protobuf = flag; }
     void send(uint32_t token, const void* data, size_t data_len);
+    void sendv(uint32_t token, const sendv_item items[], int count);
+    void async_send(uint32_t token, const void* data, size_t data_len);
+    void async_sendv(uint32_t token, const sendv_item items[], int count);
     void close(uint32_t token);
     bool get_remote_ip(uint32_t token, std::string& ip);
 
@@ -53,6 +66,8 @@ public:
     void increase_count() { m_count++; }
     void decrease_count() { m_count--; }
     bool is_full() { return m_count >= m_max_count; }
+    bool is_protobuf() const { return m_is_protobuf; }
+
     socket_node* find_node(int token);
     uint32_t new_token();
 private:
@@ -93,5 +108,6 @@ private:
     int m_count = 0;
     uint32_t m_next_token = 0;
     // int64_t m_next_update = 0;
+    bool m_is_protobuf = false;
     std::unordered_map<uint32_t, socket_node*> m_nodes;
 };

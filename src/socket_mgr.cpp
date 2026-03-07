@@ -162,7 +162,6 @@ int socket_mgr::wait(int timeout) {
     for (int i = 0; i < event_count; i++) {
         epoll_event& ev = m_events[i];
         auto node = (socket_node*)ev.data.ptr;
-
         node->m_io_handing = true;
         if ((ev.events & EPOLLIN) && !node->m_closed) {
             node->on_can_recv();
@@ -345,6 +344,26 @@ void socket_mgr::set_recv_buffer_size(uint32_t token, size_t size) {
     }
 }
 
+void socket_mgr::set_send_cache(uint32_t token, size_t size) {
+    auto node = find_node(token);
+    if (node && size > 0) {
+        node->set_send_cache(size);
+    }
+}
+void socket_mgr::set_recv_cache(uint32_t token, size_t size) {
+    auto node = find_node(token);
+    if (node && size > 0) {
+        node->set_recv_cache(size);
+    }
+}
+
+void socket_mgr::set_timeout(uint32_t token, int duration) {
+    auto node = find_node(token);
+    if (node) {
+        node->set_timeout(duration);
+    }
+}
+
 void socket_mgr::set_nodelay(uint32_t token, int flag) {
     auto node = find_node(token);
     if (node) {
@@ -357,6 +376,24 @@ void socket_mgr::send(uint32_t token, const void* data, size_t data_len) {
     if (node) {
         node->send(data, data_len);
     }
+}
+
+void socket_mgr::async_send(uint32_t token, const void* data, size_t data_len) {
+    auto node = find_node(token);
+    if (node) {
+        node->async_send(data, data_len);
+    }
+}
+
+void socket_mgr::sendv(uint32_t token, const sendv_item items[], int count) {
+    auto node = find_node(token);
+    if (node) {
+        node->sendv(items, count);
+    }
+}
+
+void socket_mgr::async_sendv(uint32_t token, const sendv_item items[], int count) {
+
 }
 
 void socket_mgr::close(uint32_t token) {

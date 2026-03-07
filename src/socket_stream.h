@@ -28,6 +28,9 @@ struct socket_stream : public socket_node {
     void set_recv_buffer_size(size_t size) override { m_recv_buffer.resize(size); }
     void set_nodelay(int flag) override { set_no_delay(m_socket, flag); }
     void send(const void* data, size_t data_len) override;
+    void sendv(const sendv_item items[], int count) override;
+    virtual void async_send(const void* data, size_t data_len) override;
+    virtual void async_sendv(const sendv_item items[], int count) override;
     void stream_send(const char* data, size_t data_len);
 
 #ifdef _MSC_VER
