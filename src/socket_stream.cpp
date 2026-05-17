@@ -3,6 +3,7 @@
 ** trumanzhao, 2016-11-01, trumanzhao@foxmail.com
 */
 
+#include <cstddef>
 #ifdef _MSC_VER
 #include <Winsock2.h>
 #include <Ws2tcpip.h>
@@ -276,7 +277,7 @@ void socket_stream::async_send(const void* data, size_t data_len) {
     if (m_closed)
         return;
 
-    unsigned char  buffer[2048];    
+    unsigned char  buffer[2048] = {0};    
     size_t header_len = encode_u64(buffer, sizeof(buffer), data_len);
     size_t total_len = header_len + data_len;
     if (total_len <= sizeof(buffer)) {

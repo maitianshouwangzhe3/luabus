@@ -16,7 +16,6 @@ LUA_EXPORT_METHOD(router)
 LUA_EXPORT_METHOD(set_master)
 LUA_EXPORT_METHOD(set_package_size)
 LUA_EXPORT_METHOD(set_lz_threshold)
-LUA_EXPORT_METHOD(set_protobuf)
 LUA_EXPORT_CLASS_END()
 
 lua_socket_mgr::~lua_socket_mgr() {
@@ -78,7 +77,7 @@ int lua_socket_mgr::connect(lua_State* L) {
     }
 
     auto stream = new lua_socket_node(token, m_lvm, m_mgr, m_archiver, m_router);
-    stream->set_protobuf(is_protobuf());
+    stream->set_package_type((int)m_package_type);
     lua_push_object(L, stream);
     lua_pushstring(L, "ok");
     return 2;

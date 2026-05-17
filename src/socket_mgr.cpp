@@ -371,6 +371,13 @@ void socket_mgr::set_nodelay(uint32_t token, int flag) {
     }
 }
 
+void socket_mgr::set_node_package_type(uint32_t token, int type) {
+    auto node = find_node(token);
+    if (node) {
+        node->set_package_type((package_type)type);
+    }
+}
+
 void socket_mgr::send(uint32_t token, const void* data, size_t data_len) {
     auto node = find_node(token);
     if (node) {
@@ -393,7 +400,10 @@ void socket_mgr::sendv(uint32_t token, const sendv_item items[], int count) {
 }
 
 void socket_mgr::async_sendv(uint32_t token, const sendv_item items[], int count) {
-
+    auto node = find_node(token);
+    if (node) {
+        node->async_sendv(items, count);
+    }
 }
 
 void socket_mgr::close(uint32_t token) {
@@ -429,7 +439,7 @@ void socket_mgr::set_connect_callback(uint32_t token, const std::function<void(b
     }
 }
 
-void socket_mgr::set_package_callback(uint32_t token, const std::function<void(char*, size_t)>& cb) {
+void socket_mgr::set_package_callback(uint32_t token, const std::function<int(char*, size_t)>& cb) {
     auto node = find_node(token);
     if (node) {
         node->set_package_callback(cb);

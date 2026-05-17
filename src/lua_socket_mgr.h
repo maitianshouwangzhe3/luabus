@@ -22,15 +22,15 @@ public:
     void set_lz_threshold(size_t size);
     int router(lua_State* L);
     void set_master(uint8_t group_idx, uint32_t token);
-    void set_protobuf(bool flag) { m_mgr->set_protobuf(flag); }
-    bool is_protobuf() const { return m_mgr->is_protobuf(); }
+    void set_package_type(int type) { m_package_type = (package_type)type; }
+    int get_package_type() const { return (int)m_package_type; }
 
 private:
     lua_State* m_lvm = nullptr;
     std::shared_ptr<socket_mgr> m_mgr;
     std::shared_ptr<lua_archiver> m_archiver;
     std::shared_ptr<socket_router> m_router;
-
+    package_type m_package_type = package_type::lua_message;
 public:
     DECLARE_LUA_CLASS(lua_socket_mgr)
 };

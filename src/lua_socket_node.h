@@ -38,10 +38,13 @@ struct lua_socket_node final {
 
     void set_protobuf(bool flag) { m_protobuf = flag; }
 
+    void set_package_type(int type);
+
 private:
-    void on_dispatch_message(char* data, size_t data_len);
-    void on_recv(char* data, size_t data_len);
-    void on_pb_recv(void* data, size_t data_len);
+    int on_dispatch_message(char* data, size_t data_len);
+    int on_lua_recv(char* data, size_t data_len);
+    int on_pb_recv(void* data, size_t data_len);
+    int on_raw_recv(char* data, size_t data_len);
     
     uint32_t m_token = 0;
     lua_State* m_lvm = nullptr;
@@ -50,7 +53,7 @@ private:
     std::shared_ptr<socket_mgr> m_mgr;
     std::shared_ptr<lua_archiver> m_archiver;
     std::shared_ptr<socket_router> m_router;
-
+    package_type m_package_type = package_type::lua_message;
 public:
     DECLARE_LUA_CLASS(lua_socket_node)
 };

@@ -12,6 +12,7 @@
 
 class socket_mgr;
 struct sendv_item;
+enum class package_type : int;
 
 struct socket_node {
     socket_node(uint32_t token) : m_token(token) {}
@@ -30,12 +31,13 @@ struct socket_node {
     virtual void async_sendv(const sendv_item items[], int count) {}
     virtual void set_accept_callback(const std::function<void(int)>& cb) { }
     virtual void set_connect_callback(const std::function<void(bool, const char*)>& cb) { }
-    virtual void set_package_callback(const std::function<void(char*, size_t)>& cb) { }
+    virtual void set_package_callback(const std::function<int(char*, size_t)>& cb) { }
     virtual void set_error_callback(const std::function<void(const char*)>& cb) { }
 
     virtual  void set_send_cache(size_t size) {}
     virtual void set_recv_cache(size_t size) {}
     virtual void set_timeout(int duration) {}
+    virtual void set_package_type(package_type type) {}
 
 #ifdef _MSC_VER
     virtual void on_complete(WSAOVERLAPPED* ovl) = 0;

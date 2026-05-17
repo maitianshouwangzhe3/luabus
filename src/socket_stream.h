@@ -21,12 +21,13 @@ struct socket_stream : public socket_node {
     virtual void connect(const char node_name[], const char service_name[]) override;
     bool do_connect();
     void try_connect();
-    void set_package_callback(const std::function<void(char*, size_t)>& cb) override { m_package_cb = cb; }
+    void set_package_callback(const std::function<int(char*, size_t)>& cb) override { m_package_cb = cb; }
     void set_error_callback(const std::function<void(const char*)>& cb) override { m_error_cb = cb; }
     void set_connect_callback(const std::function<void(bool, const char*)>& cb) override { m_connect_cb = cb; }
     void set_send_buffer_size(size_t size) override { m_send_buffer.resize(size); }
     void set_recv_buffer_size(size_t size) override { m_recv_buffer.resize(size); }
     void set_nodelay(int flag) override { set_no_delay(m_socket, flag); }
+    void set_package_type(package_type type) override { m_package_type = type; }
     void send(const void* data, size_t data_len) override;
     void sendv(const sendv_item items[], int count) override;
     virtual void async_send(const void* data, size_t data_len) override;
@@ -57,6 +58,7 @@ struct socket_stream : public socket_node {
     struct addrinfo* m_addr = nullptr;
     struct addrinfo* m_next = nullptr;
     char m_ip[INET6_ADDRSTRLEN];
+    package_type m_package_type = package_type::lua_message;
 
 #ifdef _MSC_VER
     LPFN_CONNECTEX m_connect_func = nullptr;
@@ -64,7 +66,7 @@ struct socket_stream : public socket_node {
     WSAOVERLAPPED m_recv_ovl;
 #endif
 
-    std::function<void(char*, size_t)> m_package_cb;
+    std::function<int(char*, size_t)> m_package_cb;
     std::function<void(const char*)> m_error_cb;
     std::function<void(bool, const char*)> m_connect_cb;
 };
