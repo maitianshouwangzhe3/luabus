@@ -18,8 +18,10 @@ LUA_EXPORT_METHOD(close)
 LUA_EXPORT_METHOD(set_send_buffer_size)
 LUA_EXPORT_METHOD(set_recv_buffer_size)
 LUA_EXPORT_METHOD(set_nodelay)
-LUA_EXPORT_METHOD(set_protobuf)
 LUA_EXPORT_METHOD(set_package_type)
+LUA_EXPORT_METHOD(raw_send)
+LUA_EXPORT_METHOD(ret)
+LUA_EXPORT_METHOD(retpack)
 LUA_EXPORT_METHOD(call)
 LUA_EXPORT_METHOD(forward_target)
 LUA_EXPORT_METHOD_AS(forward_by_group<msg_id::forward_master>, "forward_master")
@@ -202,8 +204,31 @@ int lua_socket_node::on_dispatch_message(char* data, size_t data_len) {
             return on_lua_recv(data, data_len);
         case package_type::raw_message:
             return on_raw_recv(data, data_len);
+        case package_type::ext_message:
+            return on_ext_recv(data, data_len);
         default:
             break;
+    }
+    return 0;
+}
+
+int lua_socket_node::on_ext_recv(char* data, size_t data_len) {
+    auto stream = m_mgr->find_node(m_token);
+    if (!stream) {
+        return 0;
+    }
+
+    lua_guard g(m_lvm);
+    if (!lua_get_object_function(m_lvm, this, "on_ext_recv")) {
+        lua_call_object_function(m_lvm, nullptr, this, "on_error", std::tie(), "get on_ext_recv error");
+        return 0;
+    }
+
+    std::string error_info = "";
+    std::string net_data(data, data_len);
+    if (!lua_call_function(m_lvm, &error_info, std::tie(), m_token, net_data, data_len)) {
+        lua_call_object_function(m_lvm, nullptr, this, "on_error", std::tie(), "dispatch_ext_message error: " + error_info);
+        return 0;
     }
     return 0;
 }
@@ -274,18 +299,50 @@ int lua_socket_node::on_raw_recv(char* data, size_t data_len) {
         return 0;
     }
 
-    const char* msg_data = nullptr;
-    int msg_len = 0;
-    if (!lua_call_function(m_lvm, nullptr, std::tie(msg_data, msg_len), m_token, data, data_len)) {
+    if (!lua_call_function(m_lvm, nullptr, std::tie(), m_token, data, data_len)) {
         lua_call_object_function(m_lvm, nullptr, this, "on_error", std::tie(), "dispatch_raw_message error");
         return 0;
     }
 
-    if (!msg_data || msg_len <= 0)
+    return 0;
+}
+
+int lua_socket_node::ret(lua_State* L) {
+    return 0;
+}
+
+int lua_socket_node::retpack(lua_State* L) {
+    int top = lua_gettop(L);
+    if (top < 1)
         return 0;
 
-    m_mgr->async_send(m_token, msg_data, msg_len);
-    return 0;
+    BYTE msg_id_data[MAX_VARINT_SIZE];
+    size_t msg_id_len = encode_u64(msg_id_data, sizeof(msg_id_data), (char)msg_id::remote_call);
+
+    size_t len = 0;
+    size_t data_len = 0;
+    void* data = nullptr;
+
+    switch(m_package_type) {
+        case package_type::lua_message:
+            data = m_archiver->save(&data_len, L, 1, top);
+            break;
+        case package_type::pb_message:
+        case package_type::raw_message:
+        case package_type::ext_message:
+            data_len = luaL_checkinteger(L, 2);
+            data = (void*)luaL_checklstring(L, 1, &len);
+            break;
+        default:
+            break;
+    }
+    
+    if (!data) return 0;
+
+    sendv_item items[] = {{msg_id_data, msg_id_len}, {data, data_len}};
+    m_mgr->async_sendv(m_token, items, _countof(items));
+    lua_pushinteger(L, data_len);
+    return 1;
 }
 
 int lua_socket_node::call(lua_State* L)
@@ -307,6 +364,7 @@ int lua_socket_node::call(lua_State* L)
             break;
         case package_type::pb_message:
         case package_type::raw_message:
+        case package_type::ext_message:
             data_len = luaL_checkinteger(L, 2);
             data = (void*)luaL_checklstring(L, 1, &len);
             break;
@@ -345,6 +403,7 @@ int lua_socket_node::forward_target(lua_State* L)
             break;
         case package_type::pb_message:
         case package_type::raw_message:
+        case package_type::ext_message:
             data_len = luaL_checkinteger(L, 3);
             data = (void*)luaL_checklstring(L, 2, &len);
             break;
@@ -387,6 +446,7 @@ int lua_socket_node::forward_by_group(lua_State* L)
             break;
         case package_type::pb_message:
         case package_type::raw_message:
+        case package_type::ext_message:
             data = (void*)luaL_checklstring(L, 2, &len);
             data_len = luaL_checkinteger(L, 3);
             break;
@@ -459,6 +519,7 @@ int lua_socket_node::forward_hash(lua_State* L)
             break;
         case package_type::pb_message:
         case package_type::raw_message:
+        case package_type::ext_message:
             data_len = luaL_checkinteger(L, 4);
             data = (void*)luaL_checklstring(L, 3, &len);
             break;
@@ -478,3 +539,11 @@ void lua_socket_node::set_package_type(int type) {
     m_package_type = (package_type)type;
     m_mgr->set_node_package_type(m_token, type);
 }
+
+int lua_socket_node::raw_send(lua_State* L) {
+    size_t len = 0;
+    const char* data = luaL_checklstring(L, 1, &len);
+    m_mgr->raw_send(m_token, data, len);
+    return 0;
+}
+

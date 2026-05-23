@@ -32,6 +32,7 @@ struct socket_stream : public socket_node {
     void sendv(const sendv_item items[], int count) override;
     virtual void async_send(const void* data, size_t data_len) override;
     virtual void async_sendv(const sendv_item items[], int count) override;
+    void raw_send(const void* data, size_t data_len) override;
     void stream_send(const char* data, size_t data_len);
 
 #ifdef _MSC_VER

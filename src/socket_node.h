@@ -34,10 +34,11 @@ struct socket_node {
     virtual void set_package_callback(const std::function<int(char*, size_t)>& cb) { }
     virtual void set_error_callback(const std::function<void(const char*)>& cb) { }
 
-    virtual  void set_send_cache(size_t size) {}
+    virtual void set_send_cache(size_t size) {}
     virtual void set_recv_cache(size_t size) {}
     virtual void set_timeout(int duration) {}
     virtual void set_package_type(package_type type) {}
+    virtual void raw_send(const void* data, size_t data_len) {}
 
 #ifdef _MSC_VER
     virtual void on_complete(WSAOVERLAPPED* ovl) = 0;

@@ -9,24 +9,11 @@ endif()
 add_compile_options(-fPIC -g -O0 -Wall -DLUAJIT_ENABLE_LUA52COMPAT)
 add_compile_options(-fno-omit-frame-pointer)
 
+set(LUA_DIR ${PROJECT_SOURCE_DIR}/3rd/lua)
+set(LUNA_DIR ${PROJECT_SOURCE_DIR}/3rd/luna)
+
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/src SOURCE_SRC)
-
-include(FetchContent)
-
-FetchContent_Declare(
-  lua
-  GIT_REPOSITORY  https://github.com/maitianshouwangzhe3/lua.git
-)
-
-FetchContent_Declare(
-  luna
-  GIT_REPOSITORY  https://github.com/maitianshouwangzhe3/luna.git
-)
-
-FetchContent_MakeAvailable(lua)
-FetchContent_MakeAvailable(luna)
 
 add_library(luabus SHARED ${SOURCE_SRC})
 set_target_properties(luabus PROPERTIES OUTPUT_NAME lbus PREFIX "")
-target_include_directories(luabus PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${lua_SOURCE_DIR} ${luna_SOURCE_DIR})
-target_link_libraries(luabus PRIVATE lua_shared luna_shared)
+target_include_directories(luabus PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${LUA_DIR} ${LUNA_DIR})

@@ -425,6 +425,20 @@ bool socket_mgr::get_remote_ip(uint32_t token, std::string& ip) {
     return false;
 }
 
+void socket_mgr::raw_send(uint32_t token, const void* data, size_t data_len) {
+    auto node = find_node(token);
+    if (node) {
+        node->raw_send(data, data_len);
+    }
+}
+
+void socket_mgr::set_raw_data_callback(uint32_t token, const std::function<void(const char*, size_t)>& cb) {
+    auto node = find_node(token);
+    if (node) {
+        node->set_raw_data_callback(cb);
+    }
+}
+
 void socket_mgr::set_accept_callback(uint32_t token, const std::function<void(uint32_t)>& cb) {
     auto node = find_node(token);
     if (node) {

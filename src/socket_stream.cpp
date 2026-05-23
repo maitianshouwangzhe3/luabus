@@ -330,6 +330,18 @@ void socket_stream::async_sendv(const sendv_item items[], int count) {
     (void)m_mgr->watch_send(m_socket, this, true);
 }
 
+void socket_stream::raw_send(const void* data, size_t data_len) {
+    if (m_closed)
+        return;
+
+    if (!m_send_buffer.push_data(data, data_len)) {
+        on_error("send-buffer-full");
+        return;
+    }
+
+    (void)m_mgr->watch_send(m_socket, this, true);
+}
+
 void socket_stream::stream_send(const char* data, size_t data_len) {
     if (m_closed)
         return;
@@ -580,16 +592,33 @@ void socket_stream::dispatch_package() {
         uint64_t package_size = 0;
         size_t header_len = 0;
         auto* data = m_recv_buffer.peek_data(&data_len);
-        header_len = decode_u64(&package_size, data, data_len);
-        if (header_len == 0)
-            break;
+        switch (m_package_type) {
+            case package_type::lua_message:
+            case package_type::pb_message:
+            case package_type::raw_message: {
+                header_len = decode_u64(&package_size, data, data_len);
+                if (header_len == 0) {
+                    m_recv_buffer.compact();
+                    return;
+                }
 
-        if (data_len < header_len + package_size)
+                if (data_len < header_len + package_size) {
+                    m_recv_buffer.compact();
+                    return;
+                }
+            }
             break;
-
-        m_package_cb((char*)data + header_len, (size_t)package_size);
+            default:
+                package_size = data_len;
+        }
         
+        m_package_cb((char*)data + header_len, (size_t)package_size);
+
         m_recv_buffer.pop_data(header_len + (size_t)package_size);
+
+        if (header_len == 0) {
+            break;
+        }
     }
 
     m_recv_buffer.compact();

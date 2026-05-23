@@ -24,6 +24,8 @@ struct lua_socket_node final {
     void set_recv_buffer_size(size_t size) { m_mgr->set_recv_buffer_size(m_token, size); }
     void set_nodelay(bool flag) { m_mgr->set_nodelay(m_token, flag); }
 
+    int ret(lua_State* L);
+    int retpack(lua_State* L);
     int call(lua_State* L);
     int forward(lua_State* L);
     int forward_target(lua_State* L);
@@ -36,7 +38,7 @@ struct lua_socket_node final {
     void set_recv_cache(size_t size) { m_mgr->set_recv_cache(m_token, size); }
     void set_timeout(int duration) { m_mgr->set_timeout(m_token, duration); }
 
-    void set_protobuf(bool flag) { m_protobuf = flag; }
+    int raw_send(lua_State* L);
 
     void set_package_type(int type);
 
@@ -45,10 +47,11 @@ private:
     int on_lua_recv(char* data, size_t data_len);
     int on_pb_recv(void* data, size_t data_len);
     int on_raw_recv(char* data, size_t data_len);
+    int on_ext_recv(char* data, size_t data_len);
     
     uint32_t m_token = 0;
     lua_State* m_lvm = nullptr;
-    bool m_protobuf = false;
+
     std::string m_ip;
     std::shared_ptr<socket_mgr> m_mgr;
     std::shared_ptr<lua_archiver> m_archiver;

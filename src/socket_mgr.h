@@ -24,6 +24,7 @@ enum class package_type : int {
     lua_message = 0,
     pb_message = 1,
     raw_message = 2,
+    ext_message = 3,
 };
 
 class socket_mgr {
@@ -55,6 +56,8 @@ public:
     void async_send(uint32_t token, const void* data, size_t data_len);
     void async_sendv(uint32_t token, const sendv_item items[], int count);
     void close(uint32_t token);
+    void raw_send(uint32_t token, const void* data, size_t data_len);
+    void set_raw_data_callback(uint32_t token, const std::function<void(const char*, size_t)>& cb);
     bool get_remote_ip(uint32_t token, std::string& ip);
 
     void set_accept_callback(uint32_t token, const std::function<void(uint32_t)>& cb);
